@@ -16,11 +16,13 @@ package com.duprasville.guava.probably;
 
 import com.google.common.hash.Funnel;
 import com.google.common.hash.HashCode;
-import com.google.common.hash.HashFunction;
-import com.google.common.hash.Hashing;
 
 import java.util.Random;
 
+import static com.duprasville.guava.probably.IndexUtils.hashFunction;
+import static com.duprasville.guava.probably.CuckooFilter.optimalBitsPerEntry;
+import static com.duprasville.guava.probably.CuckooFilter.optimalEntriesPerBucket;
+import static com.duprasville.guava.probably.CuckooFilter.optimalNumberOfBuckets;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.math.LongMath.mod;
 
@@ -32,7 +34,6 @@ import static com.google.common.math.LongMath.mod;
  */
 class CuckooStrategyMurmurBealDupras32 extends AbstractCuckooStrategy implements CuckooStrategy {
   private static final int MAX_RELOCATION_ATTEMPTS = 500;
-  private static final HashFunction hashFunction = Hashing.murmur3_128();
 
   CuckooStrategyMurmurBealDupras32(int ordinal) {
     super(ordinal);
@@ -42,7 +43,7 @@ class CuckooStrategyMurmurBealDupras32 extends AbstractCuckooStrategy implements
     final long hash64 = hash(object, funnel).asLong();
     final int hash1 = hash1(hash64);
     final int hash2 = hash2(hash64);
-    final int fingerprint = fingerprint(hash2, table.numBitsPerEntry);
+    final int fingerprint = IndexUtils.fingerprint(hash2, table.numBitsPerEntry);
 
     final long index = index(hash1, table.numBuckets);
     return putEntry(fingerprint, table, index) ||
@@ -63,7 +64,7 @@ class CuckooStrategyMurmurBealDupras32 extends AbstractCuckooStrategy implements
     final long hash64 = hash(object, funnel).asLong();
     final int hash1 = hash1(hash64);
     final int hash2 = hash2(hash64);
-    final int fingerprint = fingerprint(hash2, table.numBitsPerEntry);
+    final int fingerprint = IndexUtils.fingerprint(hash2, table.numBitsPerEntry);
     final long index1 = index(hash1, table.numBuckets);
     final long index2 = altIndex(index1, fingerprint, table.numBuckets);
     return table.swapAnyEntry(CuckooTable.EMPTY_ENTRY, fingerprint, index1)
@@ -74,10 +75,22 @@ class CuckooStrategyMurmurBealDupras32 extends AbstractCuckooStrategy implements
     final long hash64 = hash(object, funnel).asLong();
     final int hash1 = hash1(hash64);
     final int hash2 = hash2(hash64);
-    final int fingerprint = fingerprint(hash2, table.numBitsPerEntry);
+    final int fingerprint = IndexUtils.fingerprint(hash2, table.numBitsPerEntry);
     final long index1 = index(hash1, table.numBuckets);
     final long index2 = altIndex(index1, fingerprint, table.numBuckets);
     return table.hasEntry(fingerprint, index1) || table.hasEntry(fingerprint, index2);
+  }
+
+  public int entriesPerBucket(double fpp) {
+    return optimalEntriesPerBucket(fpp);
+  }
+
+  public long buckets(long capacity, int numEntriesPerBucket) {
+    return optimalNumberOfBuckets(capacity, numEntriesPerBucket);
+  }
+
+  public int bitsPerEntry(double fpp, int numEntriesPerBucket) {
+    return optimalBitsPerEntry(fpp, numEntriesPerBucket);
   }
 
   <T> HashCode hash(final T object, final Funnel<? super T> funnel) {
@@ -90,30 +103,6 @@ class CuckooStrategyMurmurBealDupras32 extends AbstractCuckooStrategy implements
 
   int hash2(long hash64) {
     return (int) (hash64 >>> 32);
-  }
-
-  /**
-   * Returns an f-bit portion of the given hash. Iterating by f-bit segments from the least
-   * significant side of the hash to the most significant, looks for a non-zero segment. If a
-   * non-zero segment isn't found, 1 is returned to distinguish the fingerprint from a
-   * non-entry.
-   *
-   * @param hash 32-bit hash value
-   * @param f number of bits to consider from the hash
-   * @return first non-zero f-bit value from hash as an int, or 1 if no non-zero value is found
-   */
-  public static int fingerprint(int hash, int f) {
-    checkArgument(f > 0, "f must be greater than zero");
-    checkArgument(f <= Integer.SIZE, "f must be less than " + Integer.SIZE);
-    int mask = (0x80000000 >> (f - 1)) >>> (Integer.SIZE - f);
-
-    for (int bit = 0; (bit + f) <= Integer.SIZE; bit += f) {
-      int ret = (hash >> bit) & mask;
-      if (0 != ret) {
-        return ret;
-      }
-    }
-    return 0x1;
   }
 
   /**
@@ -153,7 +142,7 @@ class CuckooStrategyMurmurBealDupras32 extends AbstractCuckooStrategy implements
    *       index == altIndex(altIndex(index, fingerprint, m), fingerprint, m)
    *
    * (**) Summing the starting index and offset can possibly lead to numeric overflow. See
-   *      {@link #protectedSum(long, long, long)} protectedSum} for details on how this is
+   *      {@link IndexUtils#protectedSum(long, long, long)} protectedSum} for details on how this is
    *      avoided.
    *
    * @param index starting index

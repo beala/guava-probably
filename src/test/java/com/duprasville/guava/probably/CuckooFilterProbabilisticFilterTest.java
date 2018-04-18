@@ -17,10 +17,9 @@ import static junit.framework.Assert.fail;
  *
  * @author Brian Dupras
  */
-public class CuckooFilterProbabilisticFilterTest extends AbstractProbabilisticFilterTest {
-  ProbabilisticFilter<CharSequence> filter(int capacity, double fpp) {
-    return CuckooFilter.create(Funnels.stringFunnel(UTF_8), capacity, fpp);
-  }
+public abstract class CuckooFilterProbabilisticFilterTest extends AbstractProbabilisticFilterTest {
+
+  abstract ProbabilisticFilter<CharSequence> filter(int capacity, double fpp);
 
   @Test
   public void addEShouldReturnFalseWhenFilterIsFull() {
@@ -192,15 +191,6 @@ public class CuckooFilterProbabilisticFilterTest extends AbstractProbabilisticFi
         lastFpp = currentFpp;
       }
     }
-  }
-
-  @Test
-  public void capacity() {
-    assertEquals(1000007, filter.capacity());
-    assertEquals(1000003, filter(1000003, 0.9D).capacity());
-
-    assertEquals(7, tinyFilter.capacity());
-    assertEquals(3, filter(3, 0.9D).capacity());
   }
 
   @Test

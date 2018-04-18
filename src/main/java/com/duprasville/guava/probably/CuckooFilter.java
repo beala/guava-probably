@@ -27,7 +27,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.Random;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
@@ -497,27 +496,21 @@ public final class CuckooFilter<E> implements ProbabilisticFilter<E>, Serializab
    * @param capacity the number of expected insertions to the constructed {@link CuckooFilter}; must
    *                 be positive
    * @param fpp      the desired false positive probability (must be positive and less than 1.0).
+   * @param cuckooStrategy the strategy used to insert into the filter.
    * @return a {@link CuckooFilter}
    */
   @CheckReturnValue
-  public static <T> CuckooFilter<T> create(
-      Funnel<? super T> funnel, long capacity, double fpp) {
-    return create(funnel, capacity, fpp,
-        CuckooStrategies.MURMUR128_BEALDUPRAS_32.strategy());
-  }
-
-  @VisibleForTesting
   static <T> CuckooFilter<T> create(Funnel<? super T> funnel, long capacity, double fpp,
                                     CuckooStrategy cuckooStrategy) {
     checkNotNull(funnel);
+    checkNotNull(cuckooStrategy);
     checkArgument(capacity > 0, "Expected insertions (%s) must be > 0", capacity);
     checkArgument(fpp > 0.0D, "False positive probability (%s) must be > 0.0", fpp);
     checkArgument(fpp < 1.0D, "False positive probability (%s) must be < 1.0", fpp);
-    checkNotNull(cuckooStrategy);
 
-    int numEntriesPerBucket = optimalEntriesPerBucket(fpp);
-    long numBuckets = optimalNumberOfBuckets(capacity, numEntriesPerBucket);
-    int numBitsPerEntry = optimalBitsPerEntry(fpp, numEntriesPerBucket);
+    int numEntriesPerBucket = cuckooStrategy.entriesPerBucket(fpp);
+    long numBuckets = cuckooStrategy.buckets(capacity, numEntriesPerBucket);
+    int numBitsPerEntry = cuckooStrategy.bitsPerEntry(fpp, numEntriesPerBucket);
 
     try {
       return new CuckooFilter<T>(new CuckooTable(numBuckets,
@@ -541,11 +534,12 @@ public final class CuckooFilter<E> implements ProbabilisticFilter<E>, Serializab
    * @param funnel   the funnel of T's that the constructed {@link CuckooFilter} will use
    * @param capacity the number of expected insertions to the constructed {@link CuckooFilter}; must
    *                 be positive
+   * @param strategy the strategy used for inserting into the filter.
    * @return a {@link CuckooFilter}
    */
   @CheckReturnValue
-  public static <T> CuckooFilter<T> create(Funnel<? super T> funnel, long capacity) {
-    return create(funnel, capacity, 0.032D);
+  public static <T> CuckooFilter<T> create(Funnel<? super T> funnel, long capacity, CuckooStrategy strategy) {
+    return create(funnel, capacity, 0.032D, strategy);
   }
 
   /*
@@ -803,11 +797,11 @@ public final class CuckooFilter<E> implements ProbabilisticFilter<E>, Serializab
    * <= Integer.MAX_VALUE at this time.
    */
   @VisibleForTesting
-  static int calculateDataLength(long capacity, double fpp) {
+  int calculateDataLength(long capacity, double fpp) {
     return CuckooTable.calculateDataLength(
-        optimalNumberOfBuckets(capacity, optimalEntriesPerBucket(fpp)),
-        optimalEntriesPerBucket(fpp),
-        optimalBitsPerEntry(fpp, optimalEntriesPerBucket(fpp)));
+            cuckooStrategy.buckets(capacity, optimalEntriesPerBucket(fpp)),
+            cuckooStrategy.entriesPerBucket(fpp),
+            cuckooStrategy.bitsPerEntry(fpp, optimalEntriesPerBucket(fpp)));
   }
 
   @Override

@@ -15,11 +15,14 @@
 
 package com.duprasville.guava.probably;
 
+import com.google.common.math.LongMath;
 import org.junit.Test;
 
+import java.math.RoundingMode;
 import java.util.Random;
 
 import static com.duprasville.guava.probably.CuckooStrategies.MURMUR128_BEALDUPRAS_32;
+import static com.duprasville.guava.probably.CuckooStrategies.ORIGINAL;
 import static com.duprasville.guava.probably.CuckooStrategies.values;
 import static com.duprasville.guava.probably.CuckooTable.readBits;
 import static com.duprasville.guava.probably.CuckooTable.writeBits;
@@ -32,17 +35,20 @@ import static junit.framework.Assert.assertEquals;
  *
  * @author Brian Dupras
  */
-public class CuckooStrategiesTest {
+public abstract class AbstractCuckooStrategiesTest {
+
+  abstract public AbstractCuckooStrategy strategy();
+
   @Test
   public void fingerprintBoundaries() throws Exception {
-    assertThat(CuckooStrategyMurmurBealDupras32.fingerprint(0x80000000, 1)).isEqualTo(0x01);
-    assertThat(CuckooStrategyMurmurBealDupras32.fingerprint(0xC0000000, 2)).isEqualTo(0x03);
-    assertThat(CuckooStrategyMurmurBealDupras32.fingerprint(0xE0000000, 3)).isEqualTo(0x04);
-    assertThat(CuckooStrategyMurmurBealDupras32.fingerprint(0xE0000000, 8)).isEqualTo(0xE0);
-    assertThat(CuckooStrategyMurmurBealDupras32.fingerprint(0xE0000000, 16)).isEqualTo(0xE000);
-    assertThat(CuckooStrategyMurmurBealDupras32.fingerprint(0x80000000, Integer.SIZE)).isEqualTo(0x80000000);
+    assertThat(IndexUtils.fingerprint(0x80000000, 1)).isEqualTo(0x01);
+    assertThat(IndexUtils.fingerprint(0xC0000000, 2)).isEqualTo(0x03);
+    assertThat(IndexUtils.fingerprint(0xE0000000, 3)).isEqualTo(0x04);
+    assertThat(IndexUtils.fingerprint(0xE0000000, 8)).isEqualTo(0xE0);
+    assertThat(IndexUtils.fingerprint(0xE0000000, 16)).isEqualTo(0xE000);
+    assertThat(IndexUtils.fingerprint(0x80000000, Integer.SIZE)).isEqualTo(0x80000000);
     for (int f = 1; f < Integer.SIZE; f++) {
-      assertThat(CuckooStrategyMurmurBealDupras32.fingerprint(0x00, f)).isNotEqualTo(0x00);
+      assertThat(IndexUtils.fingerprint(0x00, f)).isNotEqualTo(0x00);
     }
   }
 
@@ -54,27 +60,14 @@ public class CuckooStrategiesTest {
     final long m = 0x1DEAL;
 
     for (int hash = min; hash != next(hash, incr, max); hash = next(hash, incr, max)) {
-      final long index = new CuckooStrategyMurmurBealDupras32(-1).index(hash, m);
+      final long index = strategy().index(hash, m);
       assertThat(index).isLessThan(m);
       assertThat(index).isGreaterThan(-1L);
     }
   }
 
   @Test
-  public void altIndexIsReversible() throws Exception {
-    final long max = Long.MAX_VALUE - 1L; // must be even!
-    final long incr = 1000000L;
-    final Random random = new Random(1L);
-    final byte[] fingerprint = new byte[1];
-
-    for (long index = 0; index != next(index, incr, max); index = next(index, incr, max)) {
-      random.nextBytes(fingerprint);
-      int f = (random.nextInt(126) + 1) * (random.nextBoolean() ? 1 : -1);
-      final long altIndex = new CuckooStrategyMurmurBealDupras32(-1).altIndex(index, f, max);
-      final long altAltIndex = new CuckooStrategyMurmurBealDupras32(-1).altIndex(altIndex, f, max);
-      assertEquals("index should equal altIndex(altIndex(index)):" + f, index, altAltIndex);
-    }
-  }
+  public abstract void altIndexIsReversible() throws Exception;
 
   /**
    * This test will fail whenever someone updates/reorders the BloomFilterStrategies constants. Only
@@ -82,8 +75,9 @@ public class CuckooStrategiesTest {
    */
   @Test
   public void cuckooFilterStrategies() {
-    assertThat(values()).hasLength(1);
+    assertThat(values()).hasLength(2);
     assertEquals(MURMUR128_BEALDUPRAS_32, values()[0]);
+    assertEquals(ORIGINAL, values()[1]);
   }
 
   @Test
@@ -146,12 +140,12 @@ public class CuckooStrategiesTest {
 
   // Test utilities
 
-  private int next(int start, int incr, int max) {
+  int next(int start, int incr, int max) {
     int ret = start + max / incr;
     return ((ret < start) || (ret > max)) ? max : ret;
   }
 
-  private long next(long start, long incr, long max) {
+  long next(long start, long incr, long max) {
     long ret = start + max / incr;
     return ((ret < start) || (ret > max)) ? max : ret;
   }

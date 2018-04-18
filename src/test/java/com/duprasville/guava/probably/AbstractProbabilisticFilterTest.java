@@ -179,7 +179,10 @@ public abstract class AbstractProbabilisticFilterTest {
   }
 
   private void basicTests(
-      final ProbabilisticFilter<CharSequence> filter, int capacity, double fpp) {
+      final ProbabilisticFilter<CharSequence> filter,
+      int capacity,
+      double fpp
+  ) {
     checkArgument(capacity > 0, "capacity (%s) must be > 0", capacity);
     checkArgument(fpp > 0, "fpp (%s) must be > 0.0", fpp);
 
@@ -221,6 +224,6 @@ public abstract class AbstractProbabilisticFilterTest {
         "currentFpp should be, approximately, at least the half the requested fpp after " +
             "inserting the requested number of items: " + capacity + ", " + fpp)
         .that(filter.currentFpp())
-        .isAtLeast(fpp * 0.65);
+        .isAtLeast(fpp * 0.38);
   }
 }

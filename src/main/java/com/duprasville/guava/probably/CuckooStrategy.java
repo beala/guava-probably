@@ -27,4 +27,8 @@ interface CuckooStrategy extends Serializable {
   boolean equivalent(CuckooTable thiz, CuckooTable that);
   boolean containsAll(CuckooTable thiz, CuckooTable that);
   boolean removeAll(CuckooTable thiz, CuckooTable that);
+
+  int entriesPerBucket(double fpp);
+  long buckets(long capacity, int numEntriesPerBucket);
+  int bitsPerEntry(double fpp, int numEntriesPerBucket);
 }

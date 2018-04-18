@@ -51,10 +51,17 @@ public enum CuckooStrategies {
    */
   MURMUR128_BEALDUPRAS_32() {
     @Override
-    public CuckooStrategy strategy() {
+    public AbstractCuckooStrategy strategy() {
       return new CuckooStrategyMurmurBealDupras32(this.ordinal());
+    }
+  },
+
+  ORIGINAL() {
+    @Override
+    public AbstractCuckooStrategy strategy() {
+      return new CuckooStrategyOriginal(this.ordinal());
     }
   };
 
-  public abstract CuckooStrategy strategy();
+  public abstract AbstractCuckooStrategy strategy();
 }

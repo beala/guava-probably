@@ -21,7 +21,6 @@ import com.google.common.primitives.Ints;
 
 import java.math.RoundingMode;
 import java.util.Arrays;
-import java.util.Random;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.lang.Math.pow;
