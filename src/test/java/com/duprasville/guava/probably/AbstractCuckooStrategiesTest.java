@@ -15,11 +15,7 @@
 
 package com.duprasville.guava.probably;
 
-import com.google.common.math.LongMath;
 import org.junit.Test;
-
-import java.math.RoundingMode;
-import java.util.Random;
 
 import static com.duprasville.guava.probably.CuckooStrategies.MURMUR128_BEALDUPRAS_32;
 import static com.duprasville.guava.probably.CuckooStrategies.ORIGINAL;
@@ -41,14 +37,14 @@ public abstract class AbstractCuckooStrategiesTest {
 
   @Test
   public void fingerprintBoundaries() throws Exception {
-    assertThat(IndexUtils.fingerprint(0x80000000, 1)).isEqualTo(0x01);
-    assertThat(IndexUtils.fingerprint(0xC0000000, 2)).isEqualTo(0x03);
-    assertThat(IndexUtils.fingerprint(0xE0000000, 3)).isEqualTo(0x04);
-    assertThat(IndexUtils.fingerprint(0xE0000000, 8)).isEqualTo(0xE0);
-    assertThat(IndexUtils.fingerprint(0xE0000000, 16)).isEqualTo(0xE000);
-    assertThat(IndexUtils.fingerprint(0x80000000, Integer.SIZE)).isEqualTo(0x80000000);
+    assertThat(IndexingStrategyUtils.fingerprint(0x80000000, 1)).isEqualTo(0x01);
+    assertThat(IndexingStrategyUtils.fingerprint(0xC0000000, 2)).isEqualTo(0x03);
+    assertThat(IndexingStrategyUtils.fingerprint(0xE0000000, 3)).isEqualTo(0x04);
+    assertThat(IndexingStrategyUtils.fingerprint(0xE0000000, 8)).isEqualTo(0xE0);
+    assertThat(IndexingStrategyUtils.fingerprint(0xE0000000, 16)).isEqualTo(0xE000);
+    assertThat(IndexingStrategyUtils.fingerprint(0x80000000, Integer.SIZE)).isEqualTo(0x80000000);
     for (int f = 1; f < Integer.SIZE; f++) {
-      assertThat(IndexUtils.fingerprint(0x00, f)).isNotEqualTo(0x00);
+      assertThat(IndexingStrategyUtils.fingerprint(0x00, f)).isNotEqualTo(0x00);
     }
   }
 

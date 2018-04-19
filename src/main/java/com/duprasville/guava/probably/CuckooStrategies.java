@@ -52,14 +52,14 @@ public enum CuckooStrategies {
   MURMUR128_BEALDUPRAS_32() {
     @Override
     public AbstractCuckooStrategy strategy() {
-      return new CuckooStrategyMurmurBealDupras32(this.ordinal());
+      return new IndexAgnosticCuckooStrategy(this.ordinal(), new BealDupras32IndexingStrategy());
     }
   },
 
   ORIGINAL() {
     @Override
     public AbstractCuckooStrategy strategy() {
-      return new CuckooStrategyOriginal(this.ordinal());
+      return new IndexAgnosticCuckooStrategy(this.ordinal(), new OriginalIndexingStrategy());
     }
   };
 

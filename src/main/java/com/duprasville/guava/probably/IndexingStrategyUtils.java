@@ -1,14 +1,9 @@
 package com.duprasville.guava.probably;
 
-import com.google.common.hash.HashFunction;
-import com.google.common.hash.Hashing;
-
 import static com.google.common.base.Preconditions.checkArgument;
 
-public class IndexUtils {
-    static final HashFunction hashFunction = Hashing.murmur3_128();
-
-    /**
+public class IndexingStrategyUtils {
+  /**
      * Returns an f-bit portion of the given hash. Iterating by f-bit segments from the least
      * significant side of the hash to the most significant, looks for a non-zero segment. If a
      * non-zero segment isn't found, 1 is returned to distinguish the fingerprint from a
@@ -32,26 +27,4 @@ public class IndexUtils {
       return 0x1;
     }
 
-    static int hash(int i) {
-      return hashFunction.hashInt(i).asInt();
-    }
-
-    /**
-     * Returns the sum of index and offset, reduced by a mod-consistent amount if necessary to
-     * protect from numeric overflow. This method is intended to support a subsequent mod operation
-     * on the return value.
-     *
-     * @param index Assumed to be >= 0L.
-     * @param offset Any value.
-     * @param mod Value used to reduce the result,
-     * @return sum of index and offset, reduced by a mod-consistent amount if necessary to protect
-     *         from numeric overflow.
-     */
-    static long protectedSum(long index, long offset, long mod) {
-      return canSum(index, offset) ? index + offset : protectedSum(index - mod, offset, mod);
-    }
-
-    static boolean canSum(long a, long b) {
-      return (a ^ b) < 0 | (a ^ (a + b)) >= 0;
-    }
 }
